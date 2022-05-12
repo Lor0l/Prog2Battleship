@@ -83,7 +83,7 @@ public class UsageTests {
             Assert.fail();
         }
 
-        playerBoard = TestBoardAlice.getPlayerShipBoard();
+        playerBoard = TestBoardAlice.getShips();
         ShipSuper part1 = playerBoard[0][0];
         ShipSuper part2 = playerBoard[1][0];
         Assert.assertNotNull(part1);
@@ -125,7 +125,7 @@ public class UsageTests {
             Assert.fail();
         }
 
-        playerBoard = TestBoardAlice.getPlayerShipBoard();
+        playerBoard = TestBoardAlice.getShips();
         ShipSuper part1 = playerBoard[0][0];
         ShipSuper part2 = playerBoard[1][0];
         Assert.assertNotNull(part1);

@@ -1,6 +1,6 @@
 package battleship;
 
-public interface PlayerBoardInterface {
+public interface PlayerBoardInterface extends BoardInterface{
 
     /**
      * Invokable in set up phase. Sets a ship on players board
@@ -18,17 +18,11 @@ public interface PlayerBoardInterface {
     void set(int xCoordinate, int yCoordinate, int ship, int orientation)
             throws WrongStatusException, OutOfFieldException, FieldOccupiedException;
 
-     /**
-     * Invocable anytime
-     *
-     * @return 2DShipArray representing board of player
-     */
-    ShipSuper[][] getPlayerShipBoard();
-
     /**
-     * Invocable anytime
-     *
-     * @return 2DCharArray with opponent hits marked
+     * gets new hitBoard via TCP and updates hitBoard (and ship objects status in case of hit)
+     * Exceptions: IO problems, wrong Status
      */
-    char[][] getPlayerHitBoard();
+    void updateBoard();
+
+
 }

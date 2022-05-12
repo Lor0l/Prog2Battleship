@@ -1,6 +1,6 @@
 package battleship;
 
-public interface OpponentBoardInterface {
+public interface OpponentBoardInterface extends BoardInterface {
 
     /**
      * Invocable in play phase. Check opponents board if coordinates are occupied by a ship and sets hit marker
@@ -12,12 +12,4 @@ public interface OpponentBoardInterface {
      */
     void shoot(int xCoordinate, int yCoordinate) throws WrongStatusException, OutOfFieldException;
 
-    /**
-     * Invocable in game phase
-     * @return 2DCharArray representing board of opponent with ships hidden showing hits only
-     * @throws WrongStatusException when method is invoked in the wrong status
-     */
-    ShipSuper[][] getOpponentShipBoard() throws WrongStatusException;
-
-    char[][] getOpponentHitBoard
 }
