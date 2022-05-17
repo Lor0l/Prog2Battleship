@@ -16,8 +16,8 @@ public class BattleshipUI {
     private static final String RULES = "rules";
     private final PrintStream outStream;
     private final BufferedReader inBufferedReader;
-    private final PlayerBoard playerBoard;
-    private final OpponentBoard opponentBoard;
+    private final BoardPlayer boardPlayer;
+    private final BoardOpponent boardOpponent;
     private final String playerName;
     private String opponentName;
 
@@ -43,8 +43,8 @@ public class BattleshipUI {
         this.outStream = os;
         this.inBufferedReader = new BufferedReader(new InputStreamReader(is));
 
-        this.playerBoard = new PlayerBoard(playerName); //+ Parameter opponentName
-        this.opponentBoard = new OpponentBoard(opponentName);
+        this.boardPlayer = new BoardPlayer(playerName); //+ Parameter opponentName
+        this.boardOpponent = new BoardOpponent(opponentName);
 
 
 
@@ -203,7 +203,7 @@ public class BattleshipUI {
         }
 
         //call api set method
-        playerBoard.set(apixCoordinate, apiyCoordinate, apiShip, apiOrient);
+        boardPlayer.set(apixCoordinate, apiyCoordinate, apiShip, apiOrient);
 
     }
 
@@ -213,7 +213,7 @@ public class BattleshipUI {
         int apixCoordinate = Integer.parseInt(st.nextToken());
         int apiyCoordinate = Integer.parseInt(st.nextToken());
 
-        opponentBoard.shoot(apixCoordinate, apiyCoordinate);
+        boardOpponent.shoot(apixCoordinate, apiyCoordinate);
 
     }
 

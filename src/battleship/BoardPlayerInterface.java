@@ -1,9 +1,11 @@
 package battleship;
 
-public interface PlayerBoardInterface extends BoardInterface{
+public interface BoardPlayerInterface extends BoardInterface{
 
     /**
-     * Invokable in set up phase. Sets a ship on players board
+     * Invokable in set up phase
+     * Sets a ship on players board
+     * Ships have to be surrounded by water and edge of board or only water
      *
      * @param xCoordinate
      * @param yCoordinate
@@ -11,9 +13,10 @@ public interface PlayerBoardInterface extends BoardInterface{
      * @param orientation Ship orientation: 0=horizontally, 1=vertically
      * @throws WrongStatusException   when method is invoked in the wrong status
      * @throws OutOfFieldException    given coordinates and/or neighbouring fields within ship length in "orientation"
-     *                                direction are out of array range
+     *                                direction are out of array bounds
      * @throws FieldOccupiedException given coordinates and/or neighbouring fields within ship length in "orientation"
-     *                                are colliding with an already set ship
+     *                                are blocked by an already set ship and/or fields surrounding new ship are
+     *                                already taken
      */
     void set(int xCoordinate, int yCoordinate, int ship, int orientation)
             throws WrongStatusException, OutOfFieldException, FieldOccupiedException;

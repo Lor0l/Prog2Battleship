@@ -1,10 +1,10 @@
 package battleship;
 
-public class OpponentBoard extends BoardImpl implements OpponentBoardInterface {
+public class BoardOpponent extends BoardImpl implements BoardOpponentInterface {
 
-    public OpponentBoard(String opponentName) {
+    public BoardOpponent(String opponentName) {
         super(opponentName);
-        // get shipBoard from opponent via TCP
+        // setShipBoard( get shipBoard from opponent via TCP );
     }
 
     @Override

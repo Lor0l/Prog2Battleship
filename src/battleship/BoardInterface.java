@@ -10,8 +10,7 @@ public interface BoardInterface {
 
     /**
      *
-     * @return array with ship objects
-     * Exceptions: if not initialized
+     * @return array with ship object (if invoked on opponents Board might be NULL if not connected jet)
      */
     ShipSuper[][] getShips();
 
