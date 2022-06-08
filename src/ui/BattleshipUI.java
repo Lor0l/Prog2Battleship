@@ -2,8 +2,13 @@ package ui;
 
 import battleship.*;
 
+
 import java.io.*;
 import java.util.StringTokenizer;
+
+import static battleship.OrientationValues.HORIZONTALLY;
+import static battleship.OrientationValues.VERTICALLY;
+import static battleship.ShipValues.*;
 
 
 public class BattleshipUI {
@@ -16,9 +21,8 @@ public class BattleshipUI {
     private static final String RULES = "rules";
     private final PrintStream outStream;
     private final BufferedReader inBufferedReader;
-    private final BoardPlayer boardPlayer;
-    private final BoardOpponent boardOpponent;
-    private final String playerName;
+    private final ArenaInterface arenaOwn;
+    private final String PLAYERNAME;
     private String opponentName;
 
     public static void main(String[] args) {
@@ -39,12 +43,11 @@ public class BattleshipUI {
     }
 
     public BattleshipUI(String playerName, PrintStream os, InputStream is) {
-        this.playerName = playerName;
+        this.PLAYERNAME = playerName;
         this.outStream = os;
         this.inBufferedReader = new BufferedReader(new InputStreamReader(is));
 
-        this.boardPlayer = new BoardPlayer(playerName); //+ Parameter opponentName
-        this.boardOpponent = new BoardOpponent(opponentName);
+        this.arenaOwn = new ArenaImpl(playerName);
 
 
 
@@ -174,18 +177,18 @@ public class BattleshipUI {
         String ship = st.nextToken();
         String orientation = st.nextToken();
 
-        int apiShip = 0;
-        int apiOrient = 0;
+        ShipValues apiShip;
+        OrientationValues apiOrient;
 
         switch (ship) {
             case "S":
-                apiShip = 0;
+                apiShip = SMALL;
                 break;
             case "M":
-                apiShip = 1;
+                apiShip = MEDIUM;
                 break;
             case "L":
-                apiShip = 2;
+                apiShip = BIG;
                 break;
             default:
                 throw new IllegalInputException();
@@ -193,27 +196,27 @@ public class BattleshipUI {
 
         switch (orientation) {
             case "H":
-                apiOrient = 0;
+                apiOrient = HORIZONTALLY;
                 break;
             case "V":
-                apiOrient = 1;
+                apiOrient = VERTICALLY;
                 break;
             default:
                 throw new IllegalInputException();
         }
 
         //call api set method
-        boardPlayer.set(apixCoordinate, apiyCoordinate, apiShip, apiOrient);
+        arenaOwn.set(apixCoordinate, apiyCoordinate, apiShip, apiOrient);
 
     }
 
-    private void doShoot(String parameterString) throws WrongStatusException, OutOfFieldException {
+    private void doShoot(String parameterString) throws WrongStatusException, OutOfFieldException, IllegalInputException {
 
         StringTokenizer st = new StringTokenizer(parameterString);
         int apixCoordinate = Integer.parseInt(st.nextToken());
         int apiyCoordinate = Integer.parseInt(st.nextToken());
 
-        boardOpponent.shoot(apixCoordinate, apiyCoordinate);
+        arenaOwn.shoot(apixCoordinate, apiyCoordinate);
 
     }
 

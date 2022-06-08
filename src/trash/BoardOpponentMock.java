@@ -1,14 +1,29 @@
-package battleship;
+package trash;
+
+import battleship.FieldValues;
+import battleship.OutOfFieldException;
+import battleship.ShipInterface;
+import battleship.WrongStatusException;
+import trash.BoardInterface;
+import trash.BoardOpponentInterface;
 
 public class BoardOpponentMock implements BoardInterface, BoardOpponentInterface {
+
+    private final String player;
+    private final ShipInterface[][] ships;
+    BoardOpponentMock(String player, ShipInterface[][] ships){
+        this.player = player;
+        this.ships = ships;
+    }
+
     @Override
-    public char[][] getBoard() {
+    public FieldValues[][] getHitMap() {
         throw new UnsupportedOperationException(
                 "Not supported yet.");
     }
 
     @Override
-    public ShipSuper[][] getShips() {
+    public ShipInterface[][] getShipMap() {
         throw new UnsupportedOperationException(
                 "Not supported yet.");
     }

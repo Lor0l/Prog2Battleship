@@ -1,6 +1,9 @@
-package battleship;
+package trash;
 
-public interface BoardPlayerInterface extends BoardInterface{
+import battleship.*;
+import trash.BoardInterface;
+
+public interface BoardOwnInterface extends BoardInterface {
 
     /**
      * Invokable in set up phase
@@ -18,14 +21,9 @@ public interface BoardPlayerInterface extends BoardInterface{
      *                                are blocked by an already set ship and/or fields surrounding new ship are
      *                                already taken
      */
-    void set(int xCoordinate, int yCoordinate, int ship, int orientation)
+    void set(int xCoordinate, int yCoordinate, ShipValues ship, OrientationValues orientation)
             throws WrongStatusException, OutOfFieldException, FieldOccupiedException;
 
-    /**
-     * gets new hitBoard via TCP and updates hitBoard (and ship objects status in case of hit)
-     * Exceptions: IO problems, wrong Status
-     */
-    void updateBoard();
 
 
 }

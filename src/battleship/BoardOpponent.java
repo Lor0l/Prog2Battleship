@@ -1,20 +1,34 @@
 package battleship;
 
-public class BoardOpponent extends BoardImpl implements BoardOpponentInterface {
+import static battleship.FieldValues.*;
 
-    public BoardOpponent(String opponentName) {
-        super(opponentName);
-        // setShipBoard( get shipBoard from opponent via TCP );
+public class BoardOpponent {
+
+    private final int ARRAY_LENGTH = 10;
+    private FieldValues[][] hitMap;
+    private ShipInterface[][] shipMap;
+
+    public BoardOpponent() {
+
+        this.hitMap = new FieldValues[ARRAY_LENGTH][ARRAY_LENGTH];
+        for (int i = 0; i < hitMap.length; i++) {
+            for (int j = 0; j < hitMap.length; j++) {
+                this.hitMap[i][j] = WATER;
+            }
+        }
     }
 
-    @Override
-    public void shoot(int xCoordinate, int yCoordinate) throws WrongStatusException, OutOfFieldException {
-        /*
-         * 1. check shipArray if not null update ship status and ship counter in case of death
-         * 2. update hitArray
-         */
+    public FieldValues[][] getHitMap(){
+        return this.hitMap;
     }
 
-    // send updated hitArray via TCP
+    public void setHitMiss(int xCoordinates, int yCoordinates, FieldValues fieldValue) {
+        this.hitMap[xCoordinates][yCoordinates] = fieldValue;
+    }
 
+    public void setDead(int[] coordinatesDead){
+        for(int i = 0; i < coordinatesDead.length; i+=2) {
+            this.hitMap[coordinatesDead[i]][coordinatesDead[i+1]] = DEAD;
+        }
+    }
 }
