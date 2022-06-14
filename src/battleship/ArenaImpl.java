@@ -3,7 +3,7 @@ package battleship;
 import static battleship.FieldValues.*;
 import static battleship.StatusValues.*;
 
-public class ArenaImpl implements ArenaInterface {
+public class ArenaImpl implements ArenaInterface, OpponentReadyListener {
 
     private BoardOwn boardOwn;
     private BoardOpponent boardOpp;
@@ -16,6 +16,7 @@ public class ArenaImpl implements ArenaInterface {
         this.boardOpp = new BoardOpponent();
         this.radioStation = new RadioStation(this);
         this.status = SET_PHASE;
+        //this.status = CONNECT_PHASE
     }
 
 
@@ -44,12 +45,12 @@ public class ArenaImpl implements ArenaInterface {
         setUpComplete = this.boardOwn.set(xCoordinate, yCoordinate, ship, orientation);
 
         if (setUpComplete) {
-            this.radioStation.rollDice();
-            this.status = READY;
+                this.status = READY;
+                System.out.println("ready");
+                this.radioStation.startCom();
+
+                //send ready to opponent
         }
-        //send random number to other player
-        //receive random number from other player
-        //compare, if higher status --> TURN else WAIT
     }
 
 
@@ -84,6 +85,7 @@ public class ArenaImpl implements ArenaInterface {
             // (other option: count DEATHS)
             if (this.radioStation.getStatusOpp() == LOST){
                 this.status = WON;
+                System.out.println("you won");
             }
         } else {
             this.boardOpp.setHitMiss(xCoordinate, yCoordinate, fieldValue);
@@ -92,7 +94,12 @@ public class ArenaImpl implements ArenaInterface {
         //change status if missed
         //(set status from WAIT_FOR_RESPONSE back to TURN or WAIT)
         if (fieldValue == MISS) {
+            System.out.println("you missed plz wait");
             this.status = WAIT;
+        }
+
+        if (fieldValue == HIT) {
+            System.out.println("you hit it!");
         }
 
     }
@@ -111,6 +118,26 @@ public class ArenaImpl implements ArenaInterface {
         }
 
         return fieldvalue;
+    }
+
+    @Override
+    public void opponentReady() {
+        if (this.radioStation.getOracle()) {
+            this.status = TURN;
+            System.out.println("shoot first ... good luck!");
+        } else {
+            this.status = WAIT;
+            System.out.println("plz wait");
+        }
+
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                       constructor helper                                             //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void setRadioStation(RadioStation radioStation) {
+        this.radioStation = radioStation;
     }
 
 

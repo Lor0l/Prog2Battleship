@@ -1,6 +1,6 @@
 package battleship;
 
-enum FieldValues {
+public enum FieldValues {
 
     WATER,
     MISS,

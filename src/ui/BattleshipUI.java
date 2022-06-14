@@ -1,9 +1,14 @@
 package ui;
 
 import battleship.*;
+import network.TCPStream;
+import network.TCPStreamCreatedListener;
+import view.BattlefieldPrinter;
+import view.PrinterInterface;
 
 
 import java.io.*;
+import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
 import static battleship.OrientationValues.HORIZONTALLY;
@@ -11,7 +16,7 @@ import static battleship.OrientationValues.VERTICALLY;
 import static battleship.ShipValues.*;
 
 
-public class BattleshipUI {
+public class BattleshipUI implements TCPStreamCreatedListener {
     private static final String PRINT = "print";
     private static final String EXIT = "exit";
     private static final String CONNECT = "connect";
@@ -21,9 +26,14 @@ public class BattleshipUI {
     private static final String RULES = "rules";
     private final PrintStream outStream;
     private final BufferedReader inBufferedReader;
-    private final ArenaInterface arenaOwn;
     private final String PLAYERNAME;
+    private final int DEFAULT_PORT = 6907;
+    private final ArenaImpl arenaOwn;
+    private TCPStream tcpStream;
+    private RadioStation radioStation;
+    private PrinterInterface printer;
     private String opponentName;
+
 
     public static void main(String[] args) {
         System.out.println("Welcome to Battleship version 0.1");
@@ -46,8 +56,8 @@ public class BattleshipUI {
         this.PLAYERNAME = playerName;
         this.outStream = os;
         this.inBufferedReader = new BufferedReader(new InputStreamReader(is));
-
         this.arenaOwn = new ArenaImpl(playerName);
+        this.printer = new BattlefieldPrinter();
 
 
 
@@ -76,6 +86,7 @@ public class BattleshipUI {
         b.append("\n");
         b.append(RULES);
         b.append(".. how to play");
+        b.append("\n");
         b.append(EXIT);
         b.append(".. exit");
 
@@ -130,6 +141,7 @@ public class BattleshipUI {
                         this.doShoot(parameterString);
                         // redraw
                         this.doPrint();
+                        break;
                     case RULES:
                         this.doRules();
                         break;
@@ -159,6 +171,8 @@ public class BattleshipUI {
                 this.outStream.println("coordinates already occupied by an other ship");
             } catch (WrongStatusException wse) {
                 this.outStream.println("you can't do this in this phase of the game");
+            } catch (NoSuchElementException nsee) {
+                this.outStream.println("you probably forgot the parameter");
             }
         }
     }
@@ -169,7 +183,7 @@ public class BattleshipUI {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private void doSet(String parameterString)
-            throws WrongStatusException, IllegalInputException, OutOfFieldException, FieldOccupiedException {
+            throws WrongStatusException, IllegalInputException, OutOfFieldException, FieldOccupiedException ,NoSuchElementException{
 
         StringTokenizer st = new StringTokenizer(parameterString);
         int apixCoordinate = Integer.parseInt(st.nextToken());
@@ -187,7 +201,7 @@ public class BattleshipUI {
             case "M":
                 apiShip = MEDIUM;
                 break;
-            case "L":
+            case "B":
                 apiShip = BIG;
                 break;
             default:
@@ -243,20 +257,18 @@ public class BattleshipUI {
 
 
     private void doExit() throws IOException {
-        // shutdown engines which needs to be
-        //this.protocolEngine.close();
+        this.radioStation.close();
     }
 
     private void doOpen() {
-        //if (this.alreadyConnected()) return;
+        if (this.alreadyConnected()) return;
 
-        //this.tcpStream = new TCPStream(TicTacToe.DEFAULT_PORT, true, this.playerName);
-        //this.tcpStream.setStreamCreationListener(this);
-        //this.tcpStream.start();
+        this.tcpStream = new TCPStream(this.DEFAULT_PORT, true, this.PLAYERNAME);
+        this.tcpStream.setStreamCreationListener(this);
+        this.tcpStream.start();
     }
 
     private void doConnect(String parameterString) {
-       /*
         if (this.alreadyConnected()) return;
 
         String hostname = null;
@@ -264,20 +276,23 @@ public class BattleshipUI {
         try {
             StringTokenizer st = new StringTokenizer(parameterString);
             hostname = st.nextToken();
-        } catch (NoSuchElementException e) {
+        } catch (Exception e) {
             System.out.println("no hostname provided - take localhost");
             hostname = "localhost";
         }
 
-        this.tcpStream = new TCPStream(TicTacToe.DEFAULT_PORT, false, this.playerName);
+        this.tcpStream = new TCPStream(this.DEFAULT_PORT, false, this.PLAYERNAME);
         this.tcpStream.setRemoteEngine(hostname);
         this.tcpStream.setStreamCreationListener(this);
         this.tcpStream.start();
 
-        */
     }
 
     private void doPrint() throws IOException {
+
+        this.printer.printField(this.arenaOwn.getHitMap(), this.arenaOwn.getShipMap());
+
+
         /*
         this.gameEngine.getPrintStreamView().print(System.out);
 
@@ -299,11 +314,52 @@ public class BattleshipUI {
         // + (if in game phase)
         // print opponent board with hits
 
+    }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                                  guards                                                    //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private void checkConnectionStatus() throws Exception {
+        if (this.radioStation == null) {
+            throw new Exception("not connected yet - call connect before");
+        }
     }
 
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                       helper: don't repeat yourself                                        //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private boolean alreadyConnected(){
+        if (this.tcpStream != null) {
+            System.err.println("connection already established or connection attempt in progress");
+            return true;
+        }
+        return false;
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                              listener                                                      //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public void streamCreated(TCPStream channel) {
+        this.radioStation = new RadioStation(this.arenaOwn);
+        this.arenaOwn.setRadioStation(this.radioStation);
+
+        try{
+            radioStation.handleConnection(channel.getInputStream(), channel.getOutputStream());
+            System.out.println("connected");
+        } catch (IOException e){
+            System.err.println("cannot get streams from tcpStream - fatal, give up: " + e.getLocalizedMessage());
+            System.exit(1);
+        }
+
+    }
+
+    //...
 
 }
 
