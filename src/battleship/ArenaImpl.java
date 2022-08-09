@@ -19,6 +19,13 @@ public class ArenaImpl implements ArenaInterface, OpponentReadyListener {
         //this.status = CONNECT_PHASE
     }
 
+    StatusValues getStatus() {
+        return this.status;
+    }
+
+    int[] getCoordinates(int x, int y) {
+        return this.boardOwn.getCoordinates(x, y);
+    }
 
     @Override
     public FieldValues[][] getHitMap() {
@@ -63,6 +70,11 @@ public class ArenaImpl implements ArenaInterface, OpponentReadyListener {
             throw new WrongStatusException();
         }
 
+        // no hard coded values
+        if (xCoordinate < 0 || xCoordinate > 9 || yCoordinate < 0 || yCoordinate > 9) {
+            throw new OutOfFieldException();
+        }
+
         //check if coordinates already been shot
         //maybe check for array bounds here already
         FieldValues[][] hitMap = this.boardOpp.getHitMap();
@@ -92,7 +104,6 @@ public class ArenaImpl implements ArenaInterface, OpponentReadyListener {
         }
 
         //change status if missed
-        //(set status from WAIT_FOR_RESPONSE back to TURN or WAIT)
         if (fieldValue == MISS) {
             System.out.println("you missed plz wait");
             this.status = WAIT;
@@ -120,6 +131,7 @@ public class ArenaImpl implements ArenaInterface, OpponentReadyListener {
         return fieldvalue;
     }
 
+    // set up done listener (should get oracle threw method)
     @Override
     public void opponentReady() {
         if (this.radioStation.getOracle()) {
@@ -132,9 +144,9 @@ public class ArenaImpl implements ArenaInterface, OpponentReadyListener {
 
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //                                       constructor helper                                             //
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                       constructor helper                                                       //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void setRadioStation(RadioStation radioStation) {
         this.radioStation = radioStation;
@@ -146,18 +158,10 @@ public class ArenaImpl implements ArenaInterface, OpponentReadyListener {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // network simulation //////////////////////////////////////////////////////////////////////////////////////////////
 
-    StatusValues getStatus() {
-        return this.status;
-    }
 
     // set contact point
     void setRadioContact(ArenaImpl arenaOpp){
         this.radioStation.setArenaOpp(arenaOpp);
-    }
-
-    // send coordinates of DEAD ship parts
-    int[] getCoordinates(int x, int y) {
-        return this.boardOwn.getCoordinates(x, y);
     }
 
     // send dice to opponent
@@ -173,6 +177,7 @@ public class ArenaImpl implements ArenaInterface, OpponentReadyListener {
             this.status = WAIT;
         }
     }
+
 
 
 

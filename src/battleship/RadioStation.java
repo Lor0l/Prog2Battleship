@@ -3,47 +3,73 @@ package battleship;
 import java.io.*;
 import java.util.Random;
 
+import static battleship.FieldValues.*;
 import static battleship.StatusValues.LOST;
 import static battleship.StatusValues.READY;
 
 public class RadioStation implements Runnable{
 
     private ArenaImpl arenaOwn;
-    private ArenaImpl arenaOpp; // substitute with os
     private InputStream is;
     private OutputStream os;
     private boolean oracle;
-    private long dice;
 
+    // communication Thread
+    private Thread protocolThread;
+
+    // command codes
     private final int SHOT = 0;
     private final int GET_COORDINATES = 1;
-    private final int RETURN_VALUE = 2;
     private final int GET_STATUS = 3;
+
+    private final int RETURN_SHOT = 21;
+    private final int RETURN_STATUS = 22;
+    private final int RETURN_COORDINATES = 23;
 
     private final int HIT_CODE = 10;
     private final int DEAD_CODE = 11;
     private final int MISS_CODE = 12;
+    private final int LOST_CODE = 13;
+    private final int NOT_LOST_CODE = 14;
 
-    private final int LOST_CODE = 20;
-    private final int NOT_LOST_CODE = 21;
-    private final int RETURN_STATUS = 22;
-    private final int RETURN_COORDINATES = 23;
-
-    private FieldValues returnedValueTemp;
-    private int[] coordinatesTemp;
+    // temporary "return" values
+    private FieldValues returnedHitMapValueTemp;
+    private int[] coordinatesDeadTemp;
     private StatusValues returnStatusTemp;
 
-    private Thread protocolThread;
+    // FOR TESTS (non-distributed)
+    private long dice;
+    private ArenaImpl arenaOpp;
+
 
     public RadioStation(ArenaImpl arenaOwn) {
         this.arenaOwn = arenaOwn;
     }
 
+    // initiate communication points in radioStation when connected
+    public void handleConnection(InputStream is, OutputStream os) {
+        this.is = is;
+        this.os = os;
+    }
+
+    // run communication thread
+    public void startCom(){
+        this.protocolThread = new Thread(this);
+        this.protocolThread.start();
+    }
+
+    // determine beginner
+    public boolean getOracle(){
+        return oracle;
+    }
 
 
     public FieldValues shot(int xCoordinates, int yCoordinates) throws OutOfFieldException {
-        //return this.arenaOpp.shot(xCoordinates, yCoordinates);
+        //return this.arenaOpp.shot(xCoordinates, yCoordinates); TEST
+
         DataOutputStream dos = new DataOutputStream(os);
+
+        // send shot_x_y
         try {
             dos.writeInt(SHOT);
             dos.writeInt(xCoordinates);
@@ -52,7 +78,8 @@ public class RadioStation implements Runnable{
             e.printStackTrace();
         }
 
-        while(this.returnedValueTemp == null){
+        // wait for answer
+        while(this.returnedHitMapValueTemp == null){
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -60,77 +87,95 @@ public class RadioStation implements Runnable{
             }
         }
 
-        FieldValues value = this.returnedValueTemp;
-        this.returnedValueTemp = null;
+        // extract return value from communication thread
+        FieldValues returnedHitMapValue = this.returnedHitMapValueTemp;
+        this.returnedHitMapValueTemp = null;
 
-        return value;
+        return returnedHitMapValue;
 
     }
 
-
+    // if DEAD get all coordinates for hitMap entry
     public int[] getCoordinates(int x, int y) {
 
         DataOutputStream dos = new DataOutputStream(os);
+
+        //send coordinate request
         try {
             dos.writeInt(GET_COORDINATES);
-            System.out.println("sent coordinate request");
             dos.writeInt(x);
             dos.writeInt(y);
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("fail");
         }
 
-        while (this.coordinatesTemp == null) {
+        // wait for answer
+        while (this.coordinatesDeadTemp == null) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println("got stuck");
+            // debug helper
+            // System.out.println("got stuck");
         }
 
-        int [] coordinates = this.coordinatesTemp;
-        this.coordinatesTemp = null;
+        // extract return value from communication Thread
+        int [] coordinates = this.coordinatesDeadTemp;
+        this.coordinatesDeadTemp = null;
 
-        System.out.println(" returning coordinates");
+        // debug helper
+        // System.out.println(" returning coordinates");
 
         return coordinates;
     }
 
+    // check after each DEAD if opponent lost
+    public StatusValues getStatusOpp() {
+        //return this.arenaOpp.getStatus(); TEST
 
+        DataOutputStream dos = new DataOutputStream(os);
 
-    public void handleConnection(InputStream is, OutputStream os) {
-        this.is = is;
-        this.os = os;
+        // send status request
+        try {
+            dos.writeInt(GET_STATUS);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // wait for answer
+        while (this.returnStatusTemp == null) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // extract return value from communication Thread
+        StatusValues returnStatus = this.returnStatusTemp;
+        this.returnStatusTemp = null;
+
+        return returnStatus;
     }
 
-    public void startCom(){
-        this.protocolThread = new Thread(this);
-        this.protocolThread.start();
-        //start radioStation com thread
-    }
-
-    public boolean getOracle(){
-        return oracle;
-    }
 
 
     public boolean read(){
 
-        int commandID;
-
+        int commandCode;
         DataInputStream dis = new DataInputStream(is);
         DataOutputStream dos = new DataOutputStream(os);
+
         try {
-            commandID = dis.readInt();
-            switch (commandID) {
-                case SHOT:
-                    int xCoordinates = dis.readInt();
-                    int yCoordinates = dis.readInt();
-                    FieldValues value = this.arenaOwn.shot(xCoordinates, yCoordinates);
-                    dos.writeInt(this.RETURN_VALUE);
-                    switch (value) {
+            commandCode = dis.readInt();                            // read command code
+            switch (commandCode) {
+                case SHOT:                                              // get shot
+                    int x = dis.readInt();
+                    int y = dis.readInt();
+                    FieldValues value = this.arenaOwn.shot(x, y);       // check if hit
+                    dos.writeInt(this.RETURN_SHOT);                         // send command code
+                    switch (value) {                                        // send value
                         case HIT:
                             dos.writeInt(this.HIT_CODE);
                             break;
@@ -142,24 +187,24 @@ public class RadioStation implements Runnable{
                             break;
                     }
                     break;
-                case RETURN_VALUE:
-                    int returnedValue = dis.readInt();
+                case RETURN_SHOT:                                       // receive hitMap value
+                    int returnedValue = dis.readInt();                      // read code
                     switch (returnedValue){
                         case HIT_CODE:
-                           this.returnedValueTemp = FieldValues.HIT;
+                           this.returnedHitMapValueTemp = HIT;
                            break;
                         case DEAD_CODE:
-                            this.returnedValueTemp = FieldValues.DEAD;
+                            this.returnedHitMapValueTemp = DEAD;
                             break;
                         case MISS_CODE:
-                            this.returnedValueTemp = FieldValues.MISS;
+                            this.returnedHitMapValueTemp = MISS;
                             break;
                     }
                     break;
-                case GET_STATUS:
-                    StatusValues status = this.arenaOwn.getStatus();
-                    dos.writeInt(RETURN_STATUS);
-                    switch (status) {
+                case GET_STATUS:                                        // status request
+                    StatusValues status = this.arenaOwn.getStatus();        // get own status
+                    dos.writeInt(RETURN_STATUS);                            // send command code
+                    switch (status) {                                       // send status code
                         case LOST:
                             dos.writeInt(LOST_CODE);
                             break;
@@ -168,7 +213,7 @@ public class RadioStation implements Runnable{
                             break;
                     }
                     break;
-                case RETURN_STATUS:
+                case RETURN_STATUS:                                     // receive status value
                     int returnStatus = dis.readInt();
                     switch (returnStatus){
                         case LOST_CODE:
@@ -179,33 +224,37 @@ public class RadioStation implements Runnable{
                             break;
                     }
                     break;
-                case GET_COORDINATES:
+                case GET_COORDINATES:                                   // coordinate request (if DEAD)
                     int xC = dis.readInt();
                     int yC = dis.readInt();
                     int[] coordinates = this.arenaOwn.getCoordinates(xC, yC);
-                    System.out.println(coordinates.length);
-                    dos.writeInt(RETURN_COORDINATES);
-                    dos.writeInt(coordinates.length);
-                    for (int i = 0; i < coordinates.length; i++) {
+                    dos.writeInt(RETURN_COORDINATES);                       // send command code
+                    dos.writeInt(coordinates.length);                       // send array length
+                    for (int i = 0; i < coordinates.length; i++) {          // send series of coordinates
                         dos.writeInt(coordinates[i]);
                     }
                     break;
-                case RETURN_COORDINATES:
-                    int coordinatesLength = dis.readInt();
+                case RETURN_COORDINATES:                                // receive DEAD coordinates
+                    int coordinatesLength = dis.readInt();                  // read array length
                     int[] coordinatesBack = new int[coordinatesLength];
-                    for (int i = 0; i < coordinatesLength; i++) {
+                    for (int i = 0; i < coordinatesLength; i++) {           // read series of coordinates
                         coordinatesBack[i] = dis.readInt();
                     }
-                    this.coordinatesTemp = coordinatesBack;
+                    this.coordinatesDeadTemp = coordinatesBack;
                     break;
             }
 
         } catch (IOException e) {
             e.printStackTrace();
+            try {
+                this.close();
+            } catch (IOException ioException) {
+                // ignore
+            }
+            return false;
         } catch (OutOfFieldException e) {
             e.printStackTrace();
         }
-
 
         return true;
     }
@@ -213,7 +262,6 @@ public class RadioStation implements Runnable{
 
     @Override
     public void run() {
-        //this.log("Protocol Engine started - flip a coin");
         long seed = this.hashCode() * System.currentTimeMillis();
         Random random = new Random(seed);
 
@@ -223,7 +271,6 @@ public class RadioStation implements Runnable{
             DataInputStream dis = new DataInputStream(this.is);
             do {
                 localInt = random.nextInt();
-                //this.log("flip and take number " + localInt);
                 dos.writeInt(localInt);
                 System.out.println("wait for other player");
                 remoteInt = dis.readInt();
@@ -231,9 +278,8 @@ public class RadioStation implements Runnable{
 
             this.oracle = localInt < remoteInt;
             System.out.println("coin flipped");
-            //this.log("Flipped a coin and got an oracle == " + this.oracle);
-            //this.oracleSet = true;
 
+            // notify listening arena (should give oracle in method)
             this.arenaOwn.opponentReady();
 
         } catch (IOException e) {
@@ -257,30 +303,12 @@ public class RadioStation implements Runnable{
 
 
 
-    // not necessary anymore
+    // for tests (non-distributed) /////////////////////////////////////////////////////////////////////////////////////
 
-    public StatusValues getStatusOpp() {
-        //return this.arenaOpp.getStatus();
-        DataOutputStream dos = new DataOutputStream(os);
-        try {
-            dos.writeInt(GET_STATUS);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        while (this.returnStatusTemp == null) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
 
-        StatusValues returnStatus = this.returnStatusTemp;
-        this.returnStatusTemp = null;
 
-        return returnStatus;
-    }
+
 
     public void setArenaOpp(ArenaImpl arenaOpp) {
         this.arenaOpp = arenaOpp;
@@ -305,4 +333,5 @@ public class RadioStation implements Runnable{
             return false;
         }
     }
+
 }
