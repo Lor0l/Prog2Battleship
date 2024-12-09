@@ -1,5 +1,5 @@
 # Battleship Coursework 
-Course: Programming 2
+Course: Programming 2<br>
 Semester: 2
 
 This project is the result of my second-semester Prog2 coursework. The task was to test driven develop a simple round based game as a distributed application. 
